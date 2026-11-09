@@ -89,6 +89,11 @@ input{font:inherit;color:var(--text)}
 .item .mid{flex:1;min-width:0}
 .item .t1{font-size:15px}
 .item .t2{font-size:13px;color:var(--hint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .t3{font-size:13px;color:var(--text);opacity:.8;margin-top:2px;white-space:normal;word-break:break-word}
+.item .t3:before{content:'💬 '}
+.acc{cursor:pointer}
+.cat-row.tap{cursor:pointer}
+.edhint{text-align:center;font-size:12px;color:var(--hint);margin:-2px 0 4px}
 .item .amt{font-weight:600;white-space:nowrap}
 .empty{text-align:center;color:var(--hint);padding:36px 10px;font-size:15px;line-height:1.4}
 .tabs{position:fixed;left:0;right:0;bottom:0;background:var(--card);display:flex;justify-content:space-around;
@@ -191,7 +196,7 @@ save:'Сохранить', del:'Удалить', askDel:'Удалить эту �
 needCat:'Выберите категорию', needAcc:'Выберите счёт', needTwo:'Выберите два разных счёта', needTwoAcc:'Для перевода нужно минимум два счёта',
 linked:'связано с', crossHint:'Счёт с 👤 или 🏢 — это другой учёт: здесь запишется расход, там — доход',
 toP:'👤 Выделить в личное', toB:'🏢 Перевести в компанию',
-pN:'Личное', bN:'Компания', all:'Σ Всё', allAccs:'Баланс всех счетов',
+pN:'Личное', bN:'Компания', editHint:'Нажмите цифры — старая сумма заменится новой', opsOf:'Операции', allTime:'за всё время', addTo:n=>'＋ Добавить в «'+n+'»', payments:'Платежи', noOps:'Операций пока нет', all:'Σ Всё', allAccs:'Баланс всех счетов',
 debts:'Долги', debt:'Долг', debtPay:'Оплата долга', debtPays:'Погашение долгов', payFrom:'С какого счёта',
 debtLeft:(l,s)=>'Осталось '+l+' из '+s, paidOff:'✓ Погашен', noDebts:'Долгов нет', addDebt:'＋ Добавить долг', editDebts:'Изменить долги',
 debtSum:'Сумма долга', needDebt:'Выберите долг', askDelDebt:'Удалить долг? Платежи по нему останутся в истории.',
@@ -228,7 +233,7 @@ save:'Պահպանել', del:'Ջնջել', askDel:'Ջնջե՞լ այս գործ�
 needCat:'Ընտրեք կատեգորիան', needAcc:'Ընտրեք հաշիվը', needTwo:'Ընտրեք երկու տարբեր հաշիվ', needTwoAcc:'Փոխանցման համար անհրաժեշտ է առնվազն երկու հաշիվ',
 linked:'կապված է', crossHint:'👤 կամ 🏢 նշանով հաշիվը մյուս հաշվառումն է՝ այստեղ կգրանցվի ծախս, այնտեղ՝ եկամուտ',
 toP:'👤 Փոխանցել անձնականին', toB:'🏢 Փոխանցել ընկերությանը',
-pN:'Անձնական', bN:'Ընկերություն', all:'Σ Ամբողջը', allAccs:'Բոլոր հաշիվների մնացորդը',
+pN:'Անձնական', bN:'Ընկերություն', editHint:'Սեղմեք թվերը — հին գումարը կփոխարինվի նորով', opsOf:'Գործարքներ', allTime:'ամբողջ ժամանակահատվածում', addTo:n=>'＋ Ավելացնել «'+n+'»', payments:'Վճարումներ', noOps:'Գործարքներ դեռ չկան', all:'Σ Ամբողջը', allAccs:'Բոլոր հաշիվների մնացորդը',
 debts:'Պարտքեր', debt:'Պարտք', debtPay:'Պարտքի մարում', debtPays:'Պարտքերի մարում', payFrom:'Որ հաշվից',
 debtLeft:(l,s)=>'Մնացել է '+l+' / '+s, paidOff:'✓ Մարված է', noDebts:'Պարտքեր չկան', addDebt:'＋ Ավելացնել պարտք', editDebts:'Խմբագրել պարտքերը',
 debtSum:'Պարտքի գումար', needDebt:'Ընտրեք պարտքը', askDelDebt:'Ջնջե՞լ պարտքը։ Վճարումները կմնան պատմության մեջ։',
@@ -460,13 +465,13 @@ html += `<button class="tile" id="debtTile"><span class="ic" style="background:#
 html += `<button class="tile add" id="addTile">＋ ${t.add}</button></div>`;
 $('#view').innerHTML = html; bindKind();
 $('#grid').onclick=e=>{ const b=e.target.closest('.tile'); if(!b) return; haptic();
-if(b.id==='addTile') catEditor(state.kind,true); else if(b.id==='debtTile') debtPayEditor({}); else editor({k:state.kind, c:b.dataset.c}); };
+if(b.id==='addTile') catEditor(state.kind,true); else if(b.id==='debtTile') debtPayEditor({}); else { const c=cat(b.dataset.c); if(inRange().some(x=>x.c===c.id&&x.k===c.k)) catSheet(c); else editor({k:state.kind, c:b.dataset.c}); } };
 }
 function viewAcc(){
 const t=T();
 let html = `<div class="sect"><span>${t.accs}</span></div>`;
 led().accts.forEach(a=>{ const b=acctBal(a);
-html+=`<div class="acc"><span class="ic" style="background:${a.c}26">${esc(a.e)}</span><span><div class="n">${esc(nm(a))}</div><div class="s ${b<0?'red':''}">${state.cfg.hide?'•••••':fmt(b)}</div></span></div>`; });
+html+=`<div class="acc" data-a="${esc(a.id)}"><span class="ic" style="background:${a.c}26">${esc(a.e)}</span><span><div class="n">${esc(nm(a))}</div><div class="s ${b<0?'red':''}">${state.cfg.hide?'•••••':fmt(b)}</div></span></div>`; });
 const OL=state.cfg.ledger==='p'?'b':'p';
 html += `<button class="btn" id="xo">${OL==='p'?t.toP:t.toB}</button><button class="btn sec" id="tr">⇄ ${t.transfer}</button><button class="btn sec" id="ea">${t.edit}</button>`;
 $('#view').innerHTML = html;
@@ -483,7 +488,8 @@ h2+=`<button class="acc" data-d="${esc(d.id)}" style="width:100%;text-align:left
 `<div class="bar"><i style="width:${pct}%;background:var(--green)"></i></div></span></button>`; });
 h2 += (ds.length?`<button class="btn" id="payD">💳 ${t.debtPay}</button>`:'') + `<button class="btn sec" id="ed">${ds.length?t.editDebts:t.addDebt}</button>`;
 $('#view').insertAdjacentHTML('beforeend', h2);
-$$('#view .acc[data-d]').forEach(b=>b.onclick=()=>{ haptic(); debtPayEditor({c:b.dataset.d}); });
+$$('#view .acc[data-d]').forEach(b=>b.onclick=()=>{ haptic(); const d=led().debts.find(x=>x.id===b.dataset.d); if(d) debtSheet(d); });
+$$('#view .acc[data-a]').forEach(b=>b.onclick=()=>{ haptic(); const a=led().accts.find(x=>x.id===b.dataset.a); if(a) acctSheet(a); });
 if($('#payD')) $('#payD').onclick=()=>{ haptic(); debtPayEditor({}); };
 $('#ed').onclick=()=>{ haptic(); acctEditor('debts', !ds.length); };
 }
@@ -492,23 +498,65 @@ const t=T(), d=parseYmd(s), now=new Date(); now.setHours(0,0,0,0); const diff=Ma
 const base = t.dm(d.getDate(),d.getMonth(),t.monthsG) + (d.getFullYear()!==now.getFullYear()?' '+d.getFullYear():'');
 return diff===0 ? t.today+', '+base : diff===1 ? t.yesterday+', '+base : t.wd[d.getDay()]+', '+base;
 }
-function viewOps(){
-const t=T(), list=inRange().sort((a,b)=> a.d<b.d?1:a.d>b.d?-1:(a.id<b.id?1:-1));
-if(!list.length){ $('#view').innerHTML=`<div class="card empty">${t.emptyOps}</div>`; return; }
-const dayTot={}; list.forEach(x=>{ if(x.k!=='t') dayTot[x.d]=(dayTot[x.d]||0)+(x.k==='i'?x.a:-x.a); });
-let html=`<div class="hint">${t.count(list.length)}</div>`, cur='';
-list.forEach(x=>{
-if(x.d!==cur){ if(cur) html+='</div>'; cur=x.d; html+=`<div class="day"><span>${dayLabel(x.d)}</span><span>${dayTot[x.d]?fmt(dayTot[x.d],true):''}</span></div><div class="list">`; }
+function opRow(x, LL){
+const t=T(); LL=LL||state.cfg.ledger;
 let ic,col,title,sub,amt,cls;
 if(x.k==='t'){ ic='⇄'; col='#8b95a7'; title=t.transfer; sub=nm(acct(x.acc))+' → '+nm(acct(x.c)); amt=fmt(x.a); cls=''; }
-else if(x.k==='d'){ const dd=findDebt(x.c); ic=dd?dd.d.e:'💳'; col='#e5484d'; title=t.debt+': '+(dd?nm(dd.d):'—'); sub=nm(acct(x.acc))+(dd&&dd.L!==state.cfg.ledger?' · '+t[dd.L]:''); amt=fmt(-x.a,true); cls='red'; }
-else { const c=cat(x.c); ic=c.e; col=c.c; title=nm(c); sub=nm(acct(x.acc))+(x.x?' · 🔁 '+t[x.x]:''); amt=fmt(x.k==='i'?x.a:-x.a,true); cls=x.k==='i'?'green':'red'; }
-if(x.t) sub += ' · '+x.t;
-html+=`<button class="item" data-id="${esc(x.id)}"><span class="ic" style="background:${col}26">${esc(ic)}</span><span class="mid"><div class="t1">${esc(title)}</div><div class="t2">${esc(sub)}</div></span><span class="amt ${cls}">${amt}</span></button>`;
+else if(x.k==='d'){ const dd=findDebt(x.c); ic=dd?dd.d.e:'💳'; col='#e5484d'; title=t.debt+': '+(dd?nm(dd.d):'—'); sub=nm(acct(x.acc))+(dd&&dd.L!==LL?' · '+t[dd.L]:''); amt=fmt(-x.a,true); cls='red'; }
+else { const c=catIn(x.c,LL); ic=c.e; col=c.c; title=nm(c); sub=nm(acct(x.acc))+(x.x?' · 🔁 '+t[x.x]:''); amt=fmt(x.k==='i'?x.a:-x.a,true); cls=x.k==='i'?'green':'red'; }
+return `<button class="item" data-id="${esc(x.id)}" data-l="${LL}"><span class="ic" style="background:${col}26">${esc(ic)}</span><span class="mid"><div class="t1">${esc(title)}</div><div class="t2">${esc(sub)}</div>${x.t?`<div class="t3">${esc(x.t)}</div>`:''}</span><span class="amt ${cls}">${amt}</span></button>`;
+}
+function opsHtml(list){
+const dayTot={}; list.forEach(x=>{ if(x.k!=='t') dayTot[x.d]=(dayTot[x.d]||0)+(x.k==='i'?x.a:-x.a); });
+let html='', cur='';
+list.forEach(x=>{
+if(x.d!==cur){ if(cur) html+='</div>'; cur=x.d; html+=`<div class="day"><span>${dayLabel(x.d)}</span><span>${dayTot[x.d]?fmt(dayTot[x.d],true):''}</span></div><div class="list">`; }
+html+=opRow(x, x.L);
 });
-html+='</div>';
-$('#view').innerHTML=html;
-$('#view').onclick=e=>{ const b=e.target.closest('.item'); if(!b) return; const it=led().items.find(x=>x.id===b.dataset.id); if(it){ haptic(); it.k==='d'?debtPayEditor({item:it}):editor({item:it}); } };
+return html+(cur?'</div>':'');
+}
+const byDate = (a,b)=> a.d<b.d?1:a.d>b.d?-1:(a.id<b.id?1:-1);
+function openOp(id, LL){
+const it=state.L[LL||state.cfg.ledger].items.find(x=>x.id===id); if(!it) return;
+haptic();
+if(LL&&LL!==state.cfg.ledger){ state.cfg.ledger=LL; state.scope=null; render(); }
+it.k==='d'?debtPayEditor({item:it}):editor({item:it});
+}
+function listSheet(title, subtitle, list, btn, onBtn){
+const t=T();
+openSheet(`
+<div class="sh-title"><button id="cx" style="text-align:left">${t.cancel}</button><b>${esc(title)}</b><span></span></div>
+<span class="badge">${subtitle}</span>
+${btn?`<button class="btn" id="lsb" style="margin:6px 0 4px">${btn}</button>`:''}
+<div id="lsl">${list.length?opsHtml(list.sort(byDate)):`<div class="card empty">${t.noOps}</div>`}</div>
+`, ()=>{
+$('#cx').onclick=closeSheet;
+if(btn) $('#lsb').onclick=()=>{ haptic(); onBtn(); };
+$('#lsl').onclick=e=>{ const b=e.target.closest('.item'); if(b) openOp(b.dataset.id, b.dataset.l); };
+});
+}
+function catSheet(c, LL){
+const t=T(), r=range(); LL=LL||state.cfg.ledger;
+const list=state.L[LL].items.filter(x=>x.c===c.id&&(x.k==='e'||x.k==='i')&&x.d>=r.s&&x.d<r.e).map(x=>Object.assign({L:LL},x));
+const sum=list.reduce((s,x)=>s+x.a,0);
+listSheet(c.e+' '+nm(c), `${t[LL]} · ${r.label} · <b>${fmt(sum)}</b>`, list, c.sys?null:t.addTo(nm(c)), ()=>editor({k:c.k, c:c.id}));
+}
+function acctSheet(a){
+const t=T(), L=state.cfg.ledger;
+const list=state.L[L].items.filter(x=>x.acc===a.id||(x.k==='t'&&x.c===a.id)).map(x=>Object.assign({L},x));
+listSheet(a.e+' '+nm(a), `${t[L]} · ${t.allTime} · <b>${fmt(acctBal(a,L))}</b>`, list, null);
+}
+function debtSheet(d){
+const t=T(), list=[];
+LS2.forEach(L=>state.L[L].items.forEach(x=>{ if(x.k==='d'&&x.c===d.id) list.push(Object.assign({L},x)); }));
+const left=debtLeft(d);
+listSheet(d.e+' '+nm(d), `${t.payments} · ${left<=0?t.paidOff:t.debtLeft(fmt(left),fmt(Number(d.s)||0))}`, list, '💳 '+t.debtPay, ()=>debtPayEditor({c:d.id}));
+}
+function viewOps(){
+const t=T(), list=inRange().sort(byDate);
+if(!list.length){ $('#view').innerHTML=`<div class="card empty">${t.emptyOps}</div>`; return; }
+$('#view').innerHTML=`<div class="hint">${t.count(list.length)}</div>`+opsHtml(list);
+$('#view').onclick=e=>{ const b=e.target.closest('.item'); if(b) openOp(b.dataset.id, b.dataset.l); };
 }
 function donut(parts,total){
 const R=54, C=2*Math.PI*R; let off=0, segs='';
@@ -534,9 +582,15 @@ html += `<div class="card"><h3>${t.byCat}</h3><div class="chartrow">${donut(part
 parts.slice(0,4).forEach(p=>{ html+=`<div class="cat-row"><span class="dot" style="background:${p.c.c}"></span><span class="nm">${esc(p.c.e)} ${esc(nm(p.c))}</span><span class="pc">${Math.round(p.v/total*100)}%</span></div>`; });
 if(parts.length>4) html+=`<div class="cat-row"><span class="dot" style="background:var(--sep)"></span><span class="nm" style="color:var(--hint)">${t.more(parts.length-4)}</span></div>`;
 html += `</div></div><div style="margin-top:8px">`;
-parts.forEach(p=>{ html+=`<div class="cat-row" style="display:block"><div style="display:flex;gap:10px;align-items:center"><span class="nm">${esc(p.c.e)} ${esc(nm(p.c))}</span><span class="pc">${Math.round(p.v/total*100)}%</span><span class="am">${fmt(p.v)}</span></div><div class="bar"><i style="width:${p.v/max*100}%;background:${p.c.c}"></i></div></div>`; });
+parts.forEach(p=>{ html+=`<div class="cat-row tap" data-k="${esc(p.c.id)}" style="display:block"><div style="display:flex;gap:10px;align-items:center"><span class="nm">${esc(p.c.e)} ${esc(nm(p.c))}</span><span class="pc">${Math.round(p.v/total*100)}%</span><span class="am">${fmt(p.v)}</span></div><div class="bar"><i style="width:${p.v/max*100}%;background:${p.c.c}"></i></div></div>`; });
 html += `</div></div>`;
 $('#view').innerHTML=html; bind();
+$$('#view .cat-row.tap').forEach(r=>r.onclick=()=>{ haptic(); const id=r.dataset.k;
+if(id==='__debt'){ const list=[]; (sc==='all'?LS2:[sc]).forEach(L=>{ const rg=range(); state.L[L].items.forEach(x=>{ if(x.k==='d'&&x.d>=rg.s&&x.d<rg.e) list.push(Object.assign({L},x)); }); }); listSheet('💳 '+t.debtPays, range().label, list, null); return; }
+if(sc==='all'){ const p=parts.find(q=>q.c.id===id); if(!p) return; const rg=range(), key=nm(p.c)+'|'+p.c.e, list=[];
+LS2.forEach(L=>state.L[L].items.forEach(x=>{ if((x.k==='e'||x.k==='i')&&!x.x&&x.d>=rg.s&&x.d<rg.e){ const c=catIn(x.c,L); if(nm(c)+'|'+c.e===key) list.push(Object.assign({L},x)); } }));
+listSheet(p.c.e+' '+nm(p.c), t.all+' · '+rg.label, list, null); return; }
+catSheet(catIn(id,sc), sc); });
 }
 function viewMore(){
 const t=T();
@@ -641,17 +695,18 @@ document.head.appendChild(sc);
 }
 function debtPayEditor(o){
 const t=T(), item=o.item||null, isNew=!item, L=state.cfg.ledger;
+const IL = item ? (LS2.find(LL=>state.L[LL].items.includes(item))||L) : L;
 const tag=(LL)=>LL!==L?(LL==='p'?'👤':'🏢'):'';
 const debtsAll=[], acctsAll=[];
 [L,OLof(L)].forEach(LL=>{ state.L[LL].debts.forEach(d=>debtsAll.push(Object.assign({},d,{LL,pre:tag(LL)}))); state.L[LL].accts.forEach(a=>acctsAll.push(Object.assign({},a,{LL,pre:tag(LL)}))); });
 if(!debtsAll.length&&isNew){ toast(t.noDebts); acctEditor('debts',true); return; }
-const S = item ? {a:String(item.a), c:item.c, acc:item.acc, d:item.d, t:item.t}
+const S = item ? {a:String(item.a), c:item.c, acc:item.acc, d:item.d, t:item.t, fresh:true}
 : {a:'', c:o.c||((debtsAll.find(d=>debtLeft(d)>0)||debtsAll[0]).id), acc:null, d:ymd(new Date()), t:''};
 if(!S.acc){ const dl=(debtsAll.find(d=>d.id===S.c)||{}).LL||L; S.acc=(acctsAll.find(a=>a.LL===dl)||acctsAll[0]||{}).id; }
 openSheet(`
 <div class="sh-title"><button id="cx" style="text-align:left">${t.cancel}</button><b>${isNew?t.debtPay:t.edit}</b><span></span></div>
 <span class="badge">💳 ${t.debtPay}</span>
-<div class="amount" id="amt"></div>
+<div class="amount" id="amt"></div>${isNew?'':`<div class="edhint" id="edh">${t.editHint}</div>`}
 <div id="accBox"></div>
 <div class="hint" id="left" style="margin:0 0 6px"></div>
 <div class="meta"><input id="note" placeholder="${esc(t.note)}" maxlength="80" value="${esc(S.t)}"><input id="dt" type="date" value="${S.d}"></div>
@@ -670,6 +725,7 @@ draw(); showAmt();
 $('#cx').onclick=closeSheet;
 $('#accBox').onclick=e=>{ const b=e.target.closest('.chip'); if(!b) return; haptic(); if(b.dataset.a) S.acc=b.dataset.a; if(b.dataset.b) S.c=b.dataset.b; draw(); };
 $('#pad').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; haptic(); const k=b.dataset.k;
+if(S.fresh){ S.fresh=false; S.a=''; const h=$('#edh'); if(h) h.remove(); if(k==='⌫'){ showAmt(); return; } }
 if(k==='⌫') S.a=S.a.slice(0,-1); else if((S.a+k).length<=11) S.a=(S.a+k).replace(/^0+/,'');
 showAmt(); };
 $('#save').onclick=async()=>{
@@ -679,7 +735,7 @@ if(!findDebt(S.c)){ toast(t.needDebt); return; }
 const fa=findAcct(S.acc); if(!fa){ toast(t.needAcc); return; }
 const d=$('#dt').value||ymd(new Date()), note=$('#note').value.trim().slice(0,80);
 const PL=fa.L, saves=[[PL,mkey(d)]];
-if(!isNew){ state.L[L].items=state.L[L].items.filter(x=>x.id!==item.id); saves.push([L,mkey(item.d)]); }
+if(!isNew){ state.L[IL].items=state.L[IL].items.filter(x=>x.id!==item.id); saves.push([IL,mkey(item.d)]); }
 state.L[PL].items.push({id:item?item.id:uid(), d, a, c:S.c, t:note, acc:S.acc, k:'d'});
 haptic('ok'); closeSheet();
 const r=range(); if(d<r.s||d>=r.e) state.anchor=parseYmd(d);
@@ -688,7 +744,7 @@ const seen=new Set(); for(const [LL,m] of saves){ if(seen.has(LL+m)) continue; s
 toast((isNew?t.saved:t.changed)+': '+fmt(a));
 };
 if(!isNew) $('#del').onclick=async()=>{ if(!await confirmBox(t.askDel)) return;
-state.L[L].items=state.L[L].items.filter(x=>x.id!==item.id); closeSheet(); render(); await saveMonth(L,mkey(item.d)); toast(t.deleted); };
+state.L[IL].items=state.L[IL].items.filter(x=>x.id!==item.id); closeSheet(); render(); await saveMonth(IL,mkey(item.d)); toast(t.deleted); };
 });
 }
 function copyOut(text,msg){
@@ -716,7 +772,7 @@ const accts=st.accts;
 const toList = accts.concat(ost.accts.map(a=>Object.assign({},a,{pre:OL==='p'?'👤':'🏢'})));
 const linked = !!(item && item.x);
 if((o.k==='t')&&toList.length<2){ toast(t.needTwoAcc); return; }
-const S = item ? {k:item.k, a:String(item.a), c:item.c, acc:item.acc, d:item.d, t:item.t}
+const S = item ? {k:item.k, a:String(item.a), c:item.c, acc:item.acc, d:item.d, t:item.t, fresh:true}
 : {k:o.k||state.kind||'e', a:'', c:o.c||null, acc:(accts[0]||{}).id, d:ymd(new Date()), t:''};
 if(isNew && S.k==='t'){ S.c = o.to || (toList.find(a=>a.id!==S.acc)||{}).id; }
 const fromCat = isNew && !!o.c;
@@ -724,7 +780,7 @@ openSheet(`
 <div class="sh-title"><button id="cx" style="text-align:left">${t.cancel}</button><b>${isNew?t.newOp:t.edit}</b><span></span></div>
 <span class="badge">${t[L]}${linked?' · 🔁 '+t.linked+' '+t[item.x]:''}</span>
 <div class="seg" id="ek" style="margin:0 0 6px${linked?';display:none':''}"><button data-k="e">${t.expOne}</button><button data-k="i">${t.incOne}</button><button data-k="t">⇄ ${t.transfer}</button></div>
-<div class="amount" id="amt"></div>
+<div class="amount" id="amt"></div>${isNew?'':`<div class="edhint" id="edh">${t.editHint}</div>`}
 <div id="accBox"></div>
 <div class="meta"><input id="note" placeholder="${esc(t.note)}" maxlength="80" value="${esc(S.t)}"><input id="dt" type="date" value="${S.d}"></div>
 <div class="pad" id="pad">${['1','2','3','4','5','6','7','8','9','000','0','⌫'].map(k=>`<button data-k="${k}">${k}</button>`).join('')}</div>
@@ -756,6 +812,7 @@ drawKind(); drawAcc(); drawCats(); showAmt(); };
 $('#accBox').onclick=e=>{ const b=e.target.closest('.chip'); if(!b) return; haptic();
 if(b.dataset.a) S.acc=b.dataset.a; if(b.dataset.b) S.c=b.dataset.b; drawAcc(); };
 $('#pad').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; haptic(); const k=b.dataset.k;
+if(S.fresh){ S.fresh=false; S.a=''; const h=$('#edh'); if(h) h.remove(); if(k==='⌫'){ showAmt(); return; } }
 if(k==='⌫') S.a=S.a.slice(0,-1); else if((S.a+k).length<=11) S.a=(S.a+k).replace(/^0+/,'');
 showAmt(); };
 $('#catBox').onclick=async e=>{ const b=e.target.closest('button'); if(!b) return;
